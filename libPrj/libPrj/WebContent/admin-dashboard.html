@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>数字图书馆 - 管理员后台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: #f5f7fa; color: #333; overflow-x: hidden; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1rem 0.5rem; background: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); position: sticky; top: 0; z-index: 100; }
+        .library-name { font-size: 1.1rem; font-weight: 600; color: #0b3b5c; }
+        .time-info { font-size: 0.8rem; color: #666; margin-top: 4px; }
+        .header-right { display: flex; gap: 1rem; align-items: center; }
+        .refresh-btn, .profile-icon { font-size: 1.2rem; color: #666; cursor: pointer; }
+        .sidebar { width: 200px; height: calc(100vh - 60px); background: white; border-right: 1px solid #eee; position: fixed; top: 60px; left: 0; padding: 1rem 0; box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1); }
+        .menu-item { padding: 0.8rem 1rem; cursor: pointer; transition: background 0.2s; border-left: 3px solid transparent; }
+        .menu-item:hover { background: #f0f0f0; }
+        .menu-item.active { background: #e0f2ff; border-left: 3px solid #0b3b5c; }
+        .main-content { margin-left: 200px; padding: 1rem; }
+        .stats-bar { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .stat-card { padding: 0.8rem 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); flex: 1; min-width: 150px; text-align: center; }
+        .stat-title { font-size: 0.9rem; color: #666; }
+        .stat-value { font-size: 1.2rem; font-weight: 600; }
+        .search-filter { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .search-input { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; }
+        .btn { padding: 0.5rem 1rem; background: #0b3b5c; color: white; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; }
+        .btn:hover { background: #124f7a; }
+        .table-container { overflow-x: auto; margin-top: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; color: #333; }
+        
+        /* 弹窗与设置页面的特定 CSS */
+        .penalty-option input[type="radio"] { display: none; }
+        .penalty-card { display: flex; align-items: center; padding: 16px; background: #fff; border: 2px solid #e4e7ed; border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s ease; }
+        .penalty-option:hover .penalty-card { border-color: #c0c4cc; background-color: #f9fafc; }
+        .penalty-option input[type="radio"]:checked + .penalty-card { border-color: #0b3b5c; background-color: #f0f7ff; box-shadow: 0 4px 12px rgba(11, 59, 92, 0.1); }
+        .penalty-option.danger input[type="radio"]:checked + .penalty-card { border-color: #f56c6c; background-color: #fef0f0; box-shadow: 0 4px 12px rgba(245, 108, 108, 0.1); }
+        .card-icon { font-size: 24px; margin-right: 15px; filter: grayscale(100%); opacity: 0.5; transition: all 0.2s ease; }
+        .penalty-option input[type="radio"]:checked + .penalty-card .card-icon { filter: grayscale(0%); opacity: 1; }
+        .card-text h4 { margin: 0 0 4px 0; font-size: 15px; color: #303133; }
+        .card-text p { margin: 0; font-size: 13px; color: #909399; }
+        .penalty-option.danger .card-text h4 { color: #f56c6c; }
+
+        .setting-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); height: 100%; }
+        .setting-title { font-size: 1.1rem; font-weight: bold; color: #0b3b5c; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.9rem; color: #555; margin-bottom: 5px; font-weight: 500; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; font-family: inherit; }
+        .form-group input:focus, .form-group textarea:focus { border-color: #0b3b5c; outline: none; box-shadow: 0 0 0 2px rgba(11,59,92,0.1); }
+        
+        .switch { position: relative; display: inline-block; width: 54px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: #ff4d4f; } 
+        input:checked + .slider:before { transform: translateX(26px); }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="library-name">数字图书馆后台管理</div>
+        <div class="time-info" id="topTime"></div>
+        <div class="header-right">
+            <i class="fas fa-sync-alt refresh-btn" onclick="window.location.reload()"></i>
+            <i class="fas fa-user profile-icon" onclick="window.location.href='admin-profile.html'"></i>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="menu-item" id="tab-violation" onclick="window.location.href='admin-dashboard.html?tab=violation'">违规处理</div>
+        <div class="menu-item" id="tab-seat-monitor" onclick="window.location.href='admin-dashboard.html?tab=seat-monitor'">座位监控</div>
+        <div class="menu-item" id="tab-users" onclick="window.location.href='admin-dashboard.html?tab=users'">用户管理</div>
+        <div class="menu-item" id="tab-settings" onclick="window.location.href='admin-dashboard.html?tab=settings'">系统设置</div>
+        <div class="menu-item" onclick="window.location.href='admin-profile.html'">个人中心</div>
+    </div>
+
+    <div class="main-content">
+        
+        <div id="violationSection" style="display: none;">
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-title">待处理违约</div>
+                    <div class="stat-value" id="pendingCount">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">今日新增</div>
+                    <div class="stat-value">2</div>
+                </div>
+            </div>
+            <div class="search-filter" style="margin-top: 15px;">
+                <input type="text" id="violationSearchInput" class="search-input" placeholder="输入学号或姓名" onkeyup="if(event.keyCode==13) searchViolations()">
+                <button class="btn" onclick="searchViolations()">搜索</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>学号</th><th>姓名</th><th>举报类型</th><th>发生时间</th><th>涉及座位</th><th>当前状态</th><th>操作</th></tr></thead>
+                    <tbody id="reportTableBody"><tr><td colspan="7" style="text-align:center; padding: 20px; color: #999;">正在拉取数据...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="userSection" style="display: none;">
+            <div style="margin-bottom: 15px; font-size: 16px; font-weight: bold; color: #0b3b5c; display: flex; align-items: center;">
+                <span style="background: #0b3b5c; width: 4px; height: 16px; margin-right: 8px; border-radius: 2px;"></span>
+                学生用户权限管理
+            </div>
+            <div class="search-filter" style="margin-bottom: 15px;">
+                <input type="text" id="userSearchInput" class="search-input" placeholder="输入学号或姓名" onkeyup="if(event.keyCode==13) searchUsers()">
+                <button class="btn" onclick="searchUsers()">搜索</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>学号</th><th>姓名</th><th>系统角色</th><th>当前状态</th><th>安全操作</th></tr></thead>
+                    <tbody id="userTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="seat-monitor-content" style="display: none;">
+             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px;">
+                <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <div style="color: #888; font-size: 0.9rem;">总座位数</div>
+                    <div id="stat-total" style="font-size: 1.8rem; font-weight: bold; color: #0b3b5c;">0</div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <div style="color: #52c41a; font-size: 0.9rem;">正在使用</div>
+                    <div id="stat-used" style="font-size: 1.8rem; font-weight: bold; color: #52c41a;">0</div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <div style="color: #faad14; font-size: 0.9rem;">暂离中</div>
+                    <div id="stat-temp" style="font-size: 1.8rem; font-weight: bold; color: #faad14;">0</div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <div style="color: #1890ff; font-size: 0.9rem;">已预约</div>
+                    <div id="stat-booked" style="font-size: 1.8rem; font-weight: bold; color: #1890ff;">0</div>
+                </div>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <select id="monitor-floor" class="search-input" style="width: 120px;" onchange="loadMonitorMap()">
+                    <option value="1">1楼</option><option value="2">2楼</option><option value="3">3楼</option><option value="4">4楼</option>
+                </select>
+                <div style="color: #ddd;">|</div>
+                <div style="display: flex; gap: 15px;">
+                    <span style="font-size: 0.85rem; color: #666; display: flex; align-items: center;"><span style="display:inline-block; width:14px; height:14px; background:#52c41a; border-radius:3px; margin-right:5px;"></span> 使用中</span>
+                    <span style="font-size: 0.85rem; color: #666; display: flex; align-items: center;"><span style="display:inline-block; width:14px; height:14px; background:#faad14; border-radius:3px; margin-right:5px;"></span> 暂离</span>
+                    <span style="font-size: 0.85rem; color: #666; display: flex; align-items: center;"><span style="display:inline-block; width:14px; height:14px; background:#1890ff; border-radius:3px; margin-right:5px;"></span> 已预约</span>
+                    <span style="font-size: 0.85rem; color: #666; display: flex; align-items: center;"><span style="display:inline-block; width:14px; height:14px; background:#e8e8e8; border-radius:3px; margin-right:5px;"></span> 空闲</span>
+                    <span style="font-size: 0.85rem; color: #666; display: flex; align-items: center;"><span style="display:inline-block; width:14px; height:14px; background:#cccccc; border-radius:3px; margin-right:5px;"></span> 故障</span>
+                </div>
+            </div>
+            <div id="monitor-map-container" style="background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px dashed #ccc; min-height: 500px; position: relative; overflow: auto;">
+                <svg id="admin-map" viewBox="0 0 1000 600" style="width: 100%; height: auto;"></svg>
+            </div>
+        </div>
+
+        <div id="settingsSection" style="display: none;">
+            <div style="margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #0b3b5c; display: flex; align-items: center;">
+                <span style="background: #0b3b5c; width: 4px; height: 18px; margin-right: 8px; border-radius: 2px;"></span>
+                数字中枢控制面板
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="setting-card">
+                    <div class="setting-title"><i class="fas fa-sliders-h"></i> 业务规则引擎</div>
+                    <div class="form-group">
+                        <label>暂离超时限额 (分钟)</label>
+                        <input type="number" id="cfg-timeout" value="60" placeholder="默认60分钟">
+                        <small style="color:#999; font-size:0.8rem;">学生点击暂离后，保留座位的最长时间。</small>
+                    </div>
+                    <div class="form-group">
+                        <label>封号违规阈值 (次)</label>
+                        <input type="number" id="cfg-violation" value="3" placeholder="默认3次">
+                        <small style="color:#999; font-size:0.8rem;">累计被核实违规达到此数值，自动冻结账号。</small>
+                    </div>
+                    <div class="form-group">
+                        <label>夜间自动清场时间</label>
+                        <input type="time" id="cfg-cleartime" value="22:30">
+                        <small style="color:#999; font-size:0.8rem;">到达该时间点，系统强制释放所有未退出的座位。</small>
+                    </div>
+                    <button class="btn" style="width: 100%; padding: 12px; font-weight:bold; margin-top: 10px;" onclick="saveSystemRules()">保存规则配置</button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="setting-card">
+                        <div class="setting-title"><i class="fas fa-bullhorn"></i> 全馆公告发布中心</div>
+                        <div class="form-group">
+                            <textarea id="sys-announcement" rows="4" placeholder="在此输入需要发送给全校学生的紧急通知或系统公告..."></textarea>
+                        </div>
+                        <div style="text-align: right;">
+                            <button class="btn" style="background: #1890ff;" onclick="publishAnnouncement()"><i class="fas fa-paper-plane"></i> 一键推送全馆</button>
+                        </div>
+                    </div>
+
+                    <div class="setting-card" style="border: 2px solid #fff0f0; background: #fffcfc;">
+                        <div class="setting-title" style="color: #ff4d4f; border-bottom-color: #ffe6e6;">
+                            <i class="fas fa-exclamation-triangle"></i> 全局场馆控制 (熔断机制)
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                            <div>
+                                <h4 style="margin:0; color:#333; font-size:15px;">一键闭馆 / 系统维护</h4>
+                                <p style="margin:5px 0 0 0; color:#999; font-size:13px;">开启后，全校前端地图锁定变灰，阻止新预约。</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="lockdown-switch" onchange="toggleLockdown()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="lockdown-status" style="margin-top: 15px; font-size: 14px; font-weight: bold; color: #52c41a; text-align: right;">
+                            当前场馆正常开放
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <div id="penaltyModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; backdrop-filter: blur(4px);">
+        <div style="background: #fff; width: 480px; margin: 8% auto; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #303133; font-size: 18px; display: flex; align-items: center;">
+                <span style="background: #0b3b5c; width: 4px; height: 18px; margin-right: 8px; border-radius: 2px;"></span>处理违规记录
+            </h3>
+            <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; font-size: 14px; color: #606266; border-left: 4px solid #909399;">
+                被举报学生：<strong style="color: #303133; font-size: 16px;" id="modalStudentName"></strong> 
+                <span style="color: #909399;">(<span id="modalStudentId"></span>)</span>
+            </div>
+            <div style="margin: 20px 0;">
+                <label class="penalty-option"><input type="radio" name="penaltyType" value="警告" checked><div class="penalty-card"><div class="card-icon">1</div><div class="card-text"><h4>口头警告</h4><p>仅发送系统通知，不影响后续座位预约</p></div></div></label>
+                <label class="penalty-option"><input type="radio" name="penaltyType" value="暂停使用一天"><div class="penalty-card"><div class="card-icon">2</div><div class="card-text"><h4>暂停使用 24 小时</h4><p>从此刻起一天内，该账号将被禁止预约座位</p></div></div></label>
+                <label class="penalty-option danger"><input type="radio" name="penaltyType" value="冻结账号"><div class="penalty-card"><div class="card-icon">3</div><div class="card-text"><h4>冻结账号</h4><p>严重违规！永久封停，需联系辅导员解封</p></div></div></label>
+            </div>
+            <div style="text-align: right; margin-top: 30px; border-top: 1px solid #ebeef5; padding-top: 20px;">
+                <button onclick="closePenaltyModal()" style="padding: 10px 20px; margin-right: 12px; border: 1px solid #dcdfe6; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; color: #606266;">取消</button>
+                <button onclick="submitPenalty()" style="padding: 10px 20px; background: #0b3b5c; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;">确认执行</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 时间更新
+        function updateTime() {
+            var now = new Date();
+            var year = now.getFullYear();
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var date = String(now.getDate()).padStart(2, '0');
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('topTime').textContent = year + '/' + month + '/' + date + ' ' + hours + ':' + minutes;
+        }
+        setInterval(updateTime, 1000); updateTime();
+
+        // 页面初始化拦截
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetTab = urlParams.get('tab');
+            if (targetTab) switchTab(targetTab); else switchTab('violation'); 
+            
+            // 读取本地保存的公告和状态
+            const savedNotice = localStorage.getItem('global_notice');
+            if(savedNotice) document.getElementById('sys-announcement').value = savedNotice;
+            
+            const isLockdown = localStorage.getItem('global_lockdown') === 'true';
+            document.getElementById('lockdown-switch').checked = isLockdown;
+            updateLockdownUI(isLockdown);
+        });
+
+        // ==========================================
+        // 核心 1：选项卡切换中心 (完美拉取数据)
+        // ==========================================
+        function switchTab(tabName) {
+            document.querySelectorAll('.sidebar .menu-item').forEach(item => item.classList.remove('active'));
+            const activeMenu = document.getElementById('tab-' + tabName);
+            if(activeMenu) activeMenu.classList.add('active');
+
+            // 隐藏所有模块
+            document.getElementById('violationSection').style.display = 'none';
+            document.getElementById('userSection').style.display = 'none';
+            document.getElementById('seat-monitor-content').style.display = 'none';
+            document.getElementById('settingsSection').style.display = 'none'; 
+
+            // 显示并触发对应的加载函数！
+            if (tabName === 'violation') {
+                document.getElementById('violationSection').style.display = 'block';
+                loadRealReports(); // 拉取违规数据
+            } else if (tabName === 'users') {
+                document.getElementById('userSection').style.display = 'block';
+                loadAllUsers(); // 拉取用户数据
+            } else if (tabName === 'seat-monitor') {
+                document.getElementById('seat-monitor-content').style.display = 'block';
+                loadMonitorMap(); // 拉取并渲染监控地图
+            } else if (tabName === 'settings') {
+                document.getElementById('settingsSection').style.display = 'block';
+            }
+        }
+
+        // ==========================================
+        // 核心 2：纯前端过滤引擎
+        // ==========================================
+        function searchViolations() {
+            const keyword = document.getElementById('violationSearchInput').value.trim().toLowerCase();
+            const rows = document.querySelectorAll('#reportTableBody tr');
+            rows.forEach(row => {
+                if (row.cells.length < 7) return; 
+                const account = row.cells[0].textContent.toLowerCase();
+                const name = row.cells[1].textContent.toLowerCase();
+                row.style.display = (account.includes(keyword) || name.includes(keyword)) ? '' : 'none';
+            });
+        }
+
+        function searchUsers() {
+            const keyword = document.getElementById('userSearchInput').value.trim().toLowerCase();
+            const rows = document.querySelectorAll('#userTableBody tr');
+            rows.forEach(row => {
+                if (row.cells.length < 5) return; 
+                const account = row.cells[0].textContent.toLowerCase();
+                const name = row.cells[1].textContent.toLowerCase();
+                row.style.display = (account.includes(keyword) || name.includes(keyword)) ? '' : 'none';
+            });
+        }
+
+        // ==========================================
+        // 核心 3：系统设置逻辑
+        // ==========================================
+        function saveSystemRules() {
+            localStorage.setItem('cfg_timeout', document.getElementById('cfg-timeout').value);
+            localStorage.setItem('cfg_violation', document.getElementById('cfg-violation').value);
+            localStorage.setItem('cfg_cleartime', document.getElementById('cfg-cleartime').value);
+            const btn = event.target; const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> 保存成功！'; btn.style.background = '#52c41a';
+            setTimeout(() => { btn.innerHTML = originalText; btn.style.background = '#0b3b5c'; }, 2000);
+        }
+
+        function publishAnnouncement() {
+            const text = document.getElementById('sys-announcement').value.trim();
+            if (!text) { alert("公告内容不能为空哦！"); return; }
+            localStorage.setItem('global_notice', text);
+            alert("发布成功！全校学生将在小程序/网页端接收到此通知。");
+        }
+
+        function toggleLockdown() {
+            const isChecked = document.getElementById('lockdown-switch').checked;
+            if (isChecked) {
+                const confirmLock = confirm("警告：正在触发全局熔断！\n\n开启后，系统将拒绝所有学生的新预约请求，主要用于全校停电、大检修等紧急情况。\n\n确认要封锁场馆吗？");
+                if (!confirmLock) {
+                    document.getElementById('lockdown-switch').checked = false; 
+                    return;
+                }
+            }
+            localStorage.setItem('global_lockdown', isChecked);
+            updateLockdownUI(isChecked);
+        }
+
+        function updateLockdownUI(isLockdown) {
+            const statusDiv = document.getElementById('lockdown-status');
+            if (isLockdown) {
+                statusDiv.innerHTML = '紧急熔断中：禁止新预约进入'; statusDiv.style.color = '#ff4d4f';
+            } else {
+                statusDiv.innerHTML = '当前场馆正常开放'; statusDiv.style.color = '#52c41a';
+            }
+        }
+
+        // ==========================================
+        // 核心 4：座位监控大盘逻辑
+        // ==========================================
+        async function loadMonitorMap() {
+            try {
+                const response = await fetch("http://localhost:8080/libPrj/api/admin/seatMonitor");
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    document.getElementById('stat-total').textContent = result.total || 0;
+                    document.getElementById('stat-used').textContent = result.occupied || 0;
+                    document.getElementById('stat-temp').textContent = result.temporary || 0;
+                    document.getElementById('stat-booked').textContent = result.booked || 0;
+
+                    const floor = document.getElementById('monitor-floor').value;
+                    const svgMap = document.getElementById('admin-map');
+                    renderAdminGrid(result.data, floor, svgMap);
+                }
+            } catch (error) { console.error("加载监控数据失败:", error); }
+        }
+
+        function renderAdminGrid(allSeats, currentFloor, svgElement) {
+            svgElement.innerHTML = ''; 
+            const floorSeats = allSeats.filter(seat => 
+                (seat.seatId && seat.seatId.startsWith(`${currentFloor}F`)) || seat.floor == currentFloor
+            );
+            if (floorSeats.length === 0) return;
+
+            const cols = 12, seatSize = 45, gapX = 70, gapY = 70, startX = 40, startY = 40;
+            const rows = Math.ceil(floorSeats.length / cols);
+            svgElement.setAttribute('viewBox', `0 0 ${cols * gapX + 80} ${rows * gapY + 80}`);
+
+            floorSeats.forEach((seat, index) => {
+                const r = Math.floor(index / cols);
+                const c = index % cols;
+                const x = startX + c * gapX;
+                const y = startY + r * gapY;
+
+                let color = '#e8e8e8'; 
+                if (seat.status === 'booked') color = '#1890ff';
+                else if (seat.status === 'occupied' || seat.status === 'used') color = '#52c41a';
+                else if (seat.status === 'temporary') color = '#faad14';
+                else if (seat.status === 'closed') color = '#cccccc'; 
+
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x); rect.setAttribute('y', y);
+                rect.setAttribute('width', seatSize); rect.setAttribute('height', seatSize);
+                rect.setAttribute('rx', 8); rect.setAttribute('fill', color);
+                rect.style.cursor = 'pointer'; rect.style.transition = 'transform 0.1s';
+                
+                rect.onmouseover = () => rect.setAttribute('transform', `scale(1.05) translate(${x * -0.05}, ${y * -0.05})`);
+                rect.onmouseout = () => rect.setAttribute('transform', 'scale(1)');
+
+                rect.onclick = () => {
+                    if (seat.status === 'closed') {
+                        if (confirm(`【设备管理】\n座位 ${seat.seatId} 当前为【故障】状态。\n设备是否已修复？点击确定将座位恢复为正常空闲状态。`)) {
+                            toggleSeatFault(seat.seatId, 'clearFault');
+                        }
+                    } else if (seat.status === 'available' || seat.status === 'free') {
+                        if (confirm(`【设备管理】\n座位 ${seat.seatId} 目前空闲。\n是否发现设备损坏，需要将该座位标记为【故障/维护】？(标记后学生将无法预约)`)) {
+                            toggleSeatFault(seat.seatId, 'setFault');
+                        }
+                    } else {
+                        const action = confirm(`【监控干预】\n📍 座位号：${seat.seatId}\n当前状态：${seat.status}\n占用学生：${seat.userAccount || '未知'}\n\n[确定] = 强制释放该座位\n[取消] = 暂不处理`);
+                        if (action) forceReleaseSeat(seat.seatId);
+                    }
+                };
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x + seatSize / 2); text.setAttribute('y', y + seatSize / 2 + 5);
+                text.setAttribute('font-size', '12'); text.setAttribute('font-weight', 'bold');
+                text.setAttribute('fill', (color === '#e8e8e8' || color === '#cccccc') ? '#666' : '#fff');
+                text.setAttribute('text-anchor', 'middle'); text.setAttribute('pointer-events', 'none');
+                
+                const shortName = seat.seatId.includes('-') ? seat.seatId.substring(seat.seatId.indexOf('-') + 1) : seat.seatId;
+                text.textContent = shortName;
+
+                svgElement.appendChild(rect); svgElement.appendChild(text);
+            });
+        }
+
+        async function forceReleaseSeat(seatId) {
+            try {
+                const res = await fetch('http://localhost:8080/libPrj/api/cancelSeat', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ seatId: seatId })
+                });
+                if ((await res.json()).code === 200) { alert('强制释放成功！'); loadMonitorMap(); }
+            } catch (e) {}
+        }
+
+        async function toggleSeatFault(seatId, actionType) {
+            try {
+                const res = await fetch('http://localhost:8080/libPrj/api/admin/setSeatFault', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ seatId: seatId, action: actionType })
+                });
+                if ((await res.json()).code === 200) { alert('设备状态已更新！'); loadMonitorMap(); }
+            } catch (e) {}
+        }
+
+        // ==========================================
+        // 核心 5：拉取违规与用户列表逻辑
+        // ==========================================
+        async function loadRealReports() {
+            try {
+                const response = await fetch('http://localhost:8080/libPrj/api/admin/reports');
+                const result = await response.json();
+                const tbody = document.getElementById('reportTableBody');
+                tbody.innerHTML = ''; 
+                let pendingCount = 0;
+                if (result.code === 200 && result.data.length > 0) {
+                    result.data.forEach(report => {
+                        const tr = document.createElement('tr');
+                        const rowId = 'row-' + report.id; tr.id = rowId;
+                        let isPending = report.status === 'pending';
+                        if (isPending) pendingCount++;
+                        let statusColor = isPending ? '#faad14' : '#52c41a'; 
+                        let buttonHtml = isPending 
+                        ? `<button onclick="openPenaltyModal('${report.reportedAccount}', '${report.reportedName}', '${rowId}', ${report.id})" style="background: #1890ff; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px;">处理</button>`
+                        : `<button style="background: #f5f5f5; color: #b8b8b8; border: 1px solid #d9d9d9; padding: 5px 12px; border-radius: 4px; cursor: not-allowed; font-size: 13px;">已处理</button>`;
+                        tr.innerHTML = `<td>${report.reportedAccount}</td><td>${report.reportedName}</td><td>${report.reportType}</td><td>${report.reportTime}</td><td>${report.seatId}</td><td><span style="background: ${statusColor}; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;"></span>${isPending ? '待处理' : '已处理'}</td><td>${buttonHtml}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                    document.getElementById('pendingCount').textContent = pendingCount;
+                } else { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: #999; padding: 20px;">暂无数据</td></tr>'; document.getElementById('pendingCount').textContent = 0; }
+            } catch (error) {}
+        }
+
+        async function loadAllUsers() {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color: #999;">正在加载全校用户数据...</td></tr>';
+            try {
+                const response = await fetch('http://localhost:8080/libPrj/api/admin/users');
+                const result = await response.json();
+                tbody.innerHTML = ''; 
+                if (result.code === 200 && result.data.length > 0) {
+                    result.data.forEach(user => {
+                        const isFrozen = user.status === 'frozen';
+                        const statusColor = isFrozen ? '#ff4d4f' : '#52c41a';
+                        const actionBtn = isFrozen 
+                            ? `<button onclick="unfreezeAccount('${user.account}', '${user.name}')" style="background: #52c41a; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(82,196,26,0.2);">解封账号</button>`
+                            : `<button style="background: #f5f5f5; color: #b8b8b8; border: 1px solid #d9d9d9; padding: 5px 12px; border-radius: 4px; cursor: not-allowed; font-size: 13px;">正常</button>`;
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${user.account}</td><td>${user.name}</td><td><span style="background: #e6f7ff; color: #1890ff; padding: 2px 8px; border-radius: 10px; font-size: 12px; border: 1px solid #91d5ff;">${user.role}</span></td><td><span style="background: ${statusColor}; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;"></span><span style="color: ${statusColor}; font-weight: ${isFrozen ? 'bold' : 'normal'}">${isFrozen ? '已冻结' : '正常'}</span></td><td>${actionBtn}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                } else { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #999; padding: 20px;">暂无数据</td></tr>'; }
+            } catch (error) {}
+        }
+
+        let currentProcessId = '', currentRowId = '', currentDbId = '';
+        function openPenaltyModal(studentId, studentName, rowId, dbId) {
+            document.getElementById('modalStudentId').textContent = studentId; document.getElementById('modalStudentName').textContent = studentName;
+            currentProcessId = studentId; currentRowId = rowId; currentDbId = dbId;
+            document.getElementById('penaltyModal').style.display = 'block';
+        }
+        function closePenaltyModal() { document.getElementById('penaltyModal').style.display = 'none'; }
+        
+        async function submitPenalty() {
+            const selectedPenalty = document.querySelector('input[name="penaltyType"]:checked').value;
+            try {
+                const res = await fetch('http://localhost:8080/libPrj/api/admin/handleReport', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportId: currentDbId, penaltyType: selectedPenalty, account: currentProcessId })
+                });
+                if ((await res.json()).code === 200) { alert('处理成功！'); closePenaltyModal(); loadRealReports(); }
+            } catch (error) {}
+        }
+
+        async function unfreezeAccount(account, name) {
+            if (!confirm(`解封学生 ${name} 的账号？`)) return;
+            try {
+                const response = await fetch('http://localhost:8080/libPrj/api/admin/unfreeze', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account: account })
+                });
+                if ((await response.json()).code === 200) { alert('解封成功！'); loadAllUsers(); }
+            } catch (error) {}
+        }
+    </script>
+</body>
+</html>

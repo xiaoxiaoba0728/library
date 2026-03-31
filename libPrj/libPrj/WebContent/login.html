@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>重邮图书馆 · 座位预约登录</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.0/crypto-js.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(145deg, #f0f5fb 0%, #e6eef9 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.2rem;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 36px;
+            box-shadow: 0 25px 50px -12px rgba(0, 30, 60, 0.25), 0 2px 10px 0 rgba(0, 0, 0, 0.05);
+            padding: 2.5rem 1.8rem 2rem 1.8rem;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .logo-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-badge {
+            width: 180px;
+            height: 80px;
+            background: transparent;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.9rem;
+        }
+
+        .logo-badge img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .school-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            color: #1e4a6f;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            margin-top: 0.25rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .school-title span {
+            font-weight: 300;
+            color: #487595;
+        }
+
+        .system-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1.2;
+            text-align: center;
+            color: #0b3b5c;
+            margin: 0.7rem 0 0.25rem 0;
+            letter-spacing: -0.3px;
+        }
+
+        .system-sub {
+            font-size: 0.8rem;
+            color: #4d6a82;
+            text-align: center;
+            border-bottom: 1px dashed #bdd3e8;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 50px;
+            padding: 0.6rem 1.2rem;
+            margin-bottom: 1.1rem;
+            border: 1.5px solid #dbe5f0;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 6px rgba(0, 20, 40, 0.02);
+        }
+
+        .input-group:focus-within {
+            border-color: #0b3b5c;
+            box-shadow: 0 4px 12px rgba(11, 59, 92, 0.12);
+        }
+
+        .input-group i {
+            color: #678ca0;
+            font-size: 1.2rem;
+            width: 28px;
+            text-align: center;
+        }
+
+        .input-group input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            font-weight: 500;
+            background: transparent;
+            padding: 0.4rem 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .input-group input::placeholder {
+            color: #a8bccf;
+            font-weight: 400;
+            font-size: 0.95rem;
+        }
+
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0.8rem 0 1.8rem;
+            font-size: 0.9rem;
+            color: #2e577a;
+        }
+
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .options input[type="checkbox"] {
+            accent-color: #0b3b5c;
+            width: 16px;
+            height: 16px;
+            margin: 0;
+        }
+
+        .options a {
+            color: #1e6b9b;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px dashed #9bb8d4;
+        }
+
+        .options a:hover {
+            color: #0b3b5c;
+            border-bottom-style: solid;
+        }
+
+        .login-btn {
+            background: #0b3b5c;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 1rem 0;
+            border-radius: 56px;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 10px 20px -7px #0b3b5c;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 1.3rem;
+        }
+
+        .login-btn:hover {
+            background: #124f7a;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 25px -10px #124f7a;
+        }
+
+        .login-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 8px 15px -6px #0b3b5c;
+        }
+
+        .role-hint {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            color: #5e7c9c;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1.8rem;
+        }
+
+        .role-hint span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #e9f0f7;
+            padding: 0.5rem 1.2rem;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .role-hint span i {
+            font-size: 0.9rem;
+        }
+
+        .internal-footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #7f99b3;
+            border-top: 1px solid #d7e2ed;
+            padding-top: 1.3rem;
+            margin-top: 0.8rem;
+            letter-spacing: 0.3px;
+            font-weight: 400;
+        }
+
+        @media (max-width: 400px) {
+            .login-card {
+                padding: 1.8rem 1.2rem 1.5rem;
+            }
+
+            .logo-badge {
+                width: 75px;
+                height: 75px;
+            }
+
+            .logo-badge i {
+                font-size: 2.8rem;
+            }
+
+            .system-name {
+                font-size: 1.6rem;
+            }
+        }
+
+        @media (max-width: 320px) {
+            .options {
+                flex-direction: column;
+                gap: 0.6rem;
+                align-items: flex-start;
+            }
+
+            .role-hint {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+        }
+        .error-tip {
+    color: #ff4d4f;      /* 醒目的红色 */
+    font-size: 14px;     /* 较小的字号 */
+    margin-top: 2px;     /* 与上方输入框的间距 */
+    margin-left: 25px;    /* 稍微向右偏移对齐 */
+    min-height: 18px;    /* 固定高度，防止布局抖动 */
+    line-height: 18px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <div class="logo-area">
+            <div class="logo-badge">
+                <img src="logo.jpg" alt="重庆邮电大学" style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+            <div class="school-title">
+                重庆邮电大学 <span>· 图书馆</span>
+            </div>
+        </div>
+
+        <h1 class="system-name">座位预约系统</h1>
+        <div class="system-sub">
+            <i class="fas fa-qrcode" style="margin-right: 6px;"></i> 扫码 · 预约 · 暂离 · 信用
+        </div>
+
+        <form action="#" method="post" onsubmit="return false;">
+            <div class="role-hint">
+                <div style="width: 100%; text-align: center; margin-bottom: 1.2rem;">
+                    <div style="font-size: 0.9rem; color: #5e7c9c; font-weight: 600; margin-bottom: 0.8rem;">请先选择身份
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 1.5rem;">
+                        <span class="role-btn" data-role="student" style="cursor: pointer; opacity: 0.6;"><i
+                                class="fas fa-graduation-cap"></i> 学生</span>
+                        <span class="role-btn" data-role="admin" style="cursor: pointer; opacity: 0.6;"><i
+                                class="fas fa-user-tie"></i> 管理员</span>
+                    </div>
+                </div>
+            </div>
+
+           <div class="input-group">
+    <i class="fas fa-user"></i>
+    <input type="text" id="accountInput" placeholder="请输入账号" required>
+</div>
+<div id="account-tip" class="error-tip"></div>
+
+<div class="input-group" style="margin-top: 15px;"> <i class="fas fa-lock"></i>
+    <input type="password" id="passwordInput" placeholder="请输入密码" required>
+</div>
+<div id="password-tip" class="error-tip"></div>
+
+            <div class="options">
+                <label>
+                    <input type="checkbox" id="rememberPwd" checked> <span>记住密码</span>
+                </label>
+            </div>
+
+            <button class="login-btn" type="button">登 录</button>
+        </form>
+
+        <div id="errorToast" style="
+            position: fixed;
+            top: 20px;
+            left: 50%;          
+            transform: translateX(-50%);  
+            background: #f44336;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            display: none;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+            animation: slideIn 0.3s ease;
+        ">
+            <span id="errorMsg"></span>
+        </div>
+<script>
+
+      // 1. 配置信息
+const APP_CONFIG = {
+    STORAGE_KEY_TOKEN: 'lib_token',
+    STORAGE_KEY_ROLE: 'lib_role',
+    STORAGE_KEY_USER_ID: 'lib_user_id',
+    STORAGE_KEY_ACCOUNT: 'lib_account',
+    STORAGE_KEY_NAME: 'lib_name'
+};
+
+let selectedRole = null;
+
+// 2. 错误提示弹窗
+function showError(message) {
+    const errorToast = document.getElementById('errorToast');
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.textContent = message;
+    errorToast.style.display = 'block';
+    setTimeout(() => {
+        errorToast.style.display = 'none';
+    }, 3000);
+}
+
+// 3. 表单基础校验
+function validateForm(account, password) {
+    if (!account || !account.trim()) {
+        showError('请输入学号');
+        return false;
+    }
+    if (!password || !password.trim()) {
+        showError('请输入密码');
+        return false;
+    }
+    if (!selectedRole) {
+        showError('请先选择身份（学生/管理员）');
+        return false;
+    }
+    return true;
+}
+
+//4. 发送真实请求到 Java 后端 (核心修改区)
+async function loginToBackend(account, password) {
+    try {
+        const response = await fetch('http://localhost:8080/libPrj/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account: account, password: password, role: selectedRole })
+        });
+
+        const result = await response.json();
+
+        if (result.code === 200) { 
+            const user = result.data;
+            localStorage.setItem(APP_CONFIG.STORAGE_KEY_TOKEN, user.token);
+            localStorage.setItem(APP_CONFIG.STORAGE_KEY_ROLE, user.role);
+            localStorage.setItem(APP_CONFIG.STORAGE_KEY_NAME, user.name);
+            localStorage.setItem(APP_CONFIG.STORAGE_KEY_ACCOUNT, account);
+            
+            // 🌟 核心拦截：如果密码是初始密码 123456，存入强制修改标记！
+            if (password === '123456') {
+                localStorage.setItem('force_change_pwd', 'true');
+            } else {
+                localStorage.removeItem('force_change_pwd');
+            }
+            
+            if (document.getElementById('rememberPwd').checked) {
+                localStorage.setItem('saved_pwd_' + account, password);
+            } else {
+                localStorage.removeItem('saved_pwd_' + account);
+            }
+
+            alert(`登录成功！欢迎你，${user.name}`);
+            setTimeout(() => redirectAfterLogin(), 800);
+        } else {
+            showError(result.message);
+        }
+    } catch (error) {
+        console.error(error);
+        showError("网络请求失败，请检查 Tomcat 是否启动以及项目名是否写对");
+    }
+}
+// 5. 登录成功后的页面跳转逻辑
+function redirectAfterLogin() {
+    const role = localStorage.getItem(APP_CONFIG.STORAGE_KEY_ROLE);
+    if (role === 'student') {
+    	window.location.href = 'student_profile.html'; // 确保这个文件在你项目的 WebContent 目录下
+    } else if (role === 'admin') {
+        window.location.href = 'admin-dashboard.html';
+    } else {
+        showError('未知用户角色');
+    }
+}
+
+// 6. 身份选择按钮特效交互
+document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        selectedRole = this.dataset.role;
+        document.querySelectorAll('.role-btn').forEach(b => {
+            b.style.background = '#e9f0f7';
+            b.style.color = '#5e7c9c';
+            b.style.opacity = '0.6';
+            b.style.fontWeight = '500';
+            b.style.boxShadow = 'none';
+        });
+        this.style.background = '#0b3b5c';
+        this.style.color = '#FFD966';
+        this.style.opacity = '1';
+        this.style.fontWeight = '600';
+        this.style.boxShadow = '0 4px 12px rgba(11, 59, 92, 0.2)';
+    });
+
+    btn.addEventListener('mouseover', function () {
+        if (selectedRole !== this.dataset.role) {
+            this.style.opacity = '0.8';
+            this.style.transform = 'scale(1.08)';
+        }
+    });
+
+    btn.addEventListener('mouseout', function () {
+        if (selectedRole !== this.dataset.role) {
+            this.style.opacity = '0.6';
+            this.style.transform = 'scale(1)';
+        }
+    });
+});
+//获取提示容器
+const accountTip = document.getElementById('account-tip');
+const passwordTip = document.getElementById('password-tip');
+const accountInput = document.getElementById('accountInput');
+const passwordInput = document.getElementById('passwordInput');
+
+// 账号输入框逻辑
+accountInput.addEventListener('focus', function() {
+    if (selectedRole === 'student') {
+        accountTip.textContent = "⚠ 学生账号为您的学号";
+    } else {
+        accountTip.textContent = "⚠ 管理员请输入工号";
+    }
+});
+
+accountInput.addEventListener('blur', function() {
+    accountTip.textContent = ""; 
+});
+
+// 密码输入框逻辑
+passwordInput.addEventListener('focus', function() {
+    if (selectedRole === 'student') {
+        passwordTip.textContent = "⚠ 学生初始密码为 123456";
+    }
+});
+
+passwordInput.addEventListener('blur', function() {
+    passwordTip.textContent = "";
+});
+
+// 兼容逻辑：点击角色切换按钮时，如果正在输入，立即更新文字
+document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (document.activeElement === accountInput) {
+            accountInput.dispatchEvent(new Event('focus'));
+        }
+        if (document.activeElement === passwordInput) {
+            passwordInput.dispatchEvent(new Event('focus'));
+        }
+    });
+});
+
+// 7. 绑定登录按钮和回车键
+document.querySelector('.login-btn').addEventListener('click', function () {
+    const account = document.getElementById('accountInput').value.trim();
+    const password = document.getElementById('passwordInput').value.trim();
+    if (validateForm(account, password)) {
+        loginToBackend(account, password);
+    }
+});
+
+document.getElementById('passwordInput').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        document.querySelector('.login-btn').click();
+    }
+});
+
+// 8. 页面加载完毕后自动填充历史账号
+window.addEventListener('load', function () {
+    const savedAccount = localStorage.getItem(APP_CONFIG.STORAGE_KEY_ACCOUNT);
+    if (savedAccount) {
+        document.getElementById('accountInput').value = savedAccount;
+        const savedPwd = localStorage.getItem('saved_pwd_' + savedAccount);
+        if (savedPwd) {
+            document.getElementById('passwordInput').value = savedPwd;
+            document.getElementById('rememberPwd').checked = true;
+        }
+    }
+});
+</script>
+        <div class="internal-footer">
+            V1.0.0 · 重邮图书馆 · 2026<br />
+            版权所有 &copy; 2026 TFgirls
+        </div>
+    </div>
+</body>
+
+</html>

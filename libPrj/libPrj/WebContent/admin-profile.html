@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>数字图书馆 - 管理员个人中心</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ================= 复用基础样式 ================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1rem 0.5rem;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .library-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0b3b5c;
+        }
+
+        .time-info {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .refresh-btn,
+        .profile-icon {
+            font-size: 1.2rem;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .profile-icon {
+            color: #0b3b5c;
+        }
+
+        .sidebar {
+            width: 200px;
+            height: calc(100vh - 60px);
+            background: white;
+            border-right: 1px solid #eee;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            padding: 1rem 0;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-item {
+            padding: 0.8rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: #f0f0f0;
+        }
+
+        .menu-item.active {
+            background: #e0f2ff;
+            border-left: 3px solid #0b3b5c;
+        }
+
+        .main-content {
+            margin-left: 200px;
+            padding: 1.5rem;
+            max-width: 1200px;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            background: #0b3b5c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #124f7a;
+        }
+
+        .logout-btn {
+            padding: 0.4rem 0.8rem;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #ff5252;
+        }
+
+        /* ================= 个人中心专属样式 ================= */
+        .content-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            color: #0b3b5c;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: #e0f2ff;
+            color: #0b3b5c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        .profile-info h2 {
+            font-size: 1.3rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .profile-info p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: #0b3b5c;
+            color: white;
+            font-size: 0.75rem;
+            border-radius: 12px;
+            margin-top: 0.3rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background: #fff;
+        }
+
+        .form-group input[readonly] {
+            background: #f9f9f9;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #f0f0f0;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .log-time {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                top: auto;
+                left: auto;
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div class="library-name">数字图书馆</div>
+        <div class="time-info">加载时间中...</div>
+        <div class="header-right">
+            <i class="fas fa-sync-alt refresh-btn" title="刷新页面"></i>
+            <i class="fas fa-user profile-icon" title="个人中心"></i>
+            <button class="logout-btn" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+
+<div class="sidebar">
+        <div class="menu-item" onclick="window.location.href='admin-dashboard.html?tab=violation'">违规处理</div>
+       <div class="menu-item" onclick="window.location.href='admin-dashboard.html?tab=seat-monitor'">座位监控</div>
+        <div class="menu-item" onclick="window.location.href='admin-dashboard.html?tab=users'">用户管理</div>
+        <div class="menu-item" onclick="window.location.href='admin-dashboard.html?tab=settings'">系统设置</div>
+        <div class="menu-item active" onclick="window.location.href='admin-profile.html'">个人中心</div>
+    </div>
+    <div class="main-content">
+
+        <div class="content-card">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="profile-info">
+                    <h2>TFgirls </h2>
+                    <p>工号：123456</p>
+                    <p>最近登录：<span id="last-login-time">加载中...</span> (IP: 192.168.1.102)</p>
+                    <span class="role-badge">超级管理员</span>
+                </div>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 1.5rem 0 1rem;">
+
+            <h3 class="card-title"><i class="fas fa-id-card"></i> 基本信息</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>真实姓名</label>
+                    <input type="text" value="" readonly id="admin-name-input">
+                </div>
+                <div class="form-group">
+                    <label>所属部门</label>
+                    <input type="text" value="图书馆管理中心" readonly>
+                </div>
+                <div class="form-group">
+                    <label>联系电话</label>
+                    <input type="text" id="phone-input" >
+                </div>
+                <div class="form-group">
+                    <label>电子邮箱</label>
+                    <input type="email" id="email-input">
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 1rem;">
+                <button class="btn" onclick="saveBasicInfo()">保存修改</button>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <h3 class="card-title"><i class="fas fa-shield-alt"></i> 安全设置</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>原密码</label>
+                    <input type="password" id="old-pwd" placeholder="请输入当前密码">
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="new-pwd" placeholder="请输入新密码（至少6位）">
+                </div>
+                <div class="form-group">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="confirm-pwd" placeholder="请再次输入新密码">
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 1rem;">
+                <button class="btn" onclick="updatePassword()">更新密码</button>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <h3 class="card-title"><i class="fas fa-history"></i> 近期操作日志</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>操作时间</th>
+                            <th>操作模块</th>
+                            <th>操作描述</th>
+                            <th>IP地址</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ================= 1. 顶部时间显示 =================
+        function updateTime() {
+            const timeElement = document.querySelector('.time-info');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const date = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const day = days[now.getDay()];
+            timeElement.textContent = `${year}年${month}月${date}日 ${hours}:${minutes} ${day}`;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // ================= 2. 动态日志系统 =================
+        const MOCK_IP = '192.168.1.102'; // 前端演示默认使用模拟IP
+        
+        // 获取当前标准格式时间
+        function getCurrentFormattedTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const date = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 初始化/读取日志数据
+        function getLogs() {
+            const storedLogs = localStorage.getItem('adminOperationLogs');
+            if (storedLogs) {
+                return JSON.parse(storedLogs);
+            } else {
+                // 如果为空，制造一条默认的登录日志
+                const initialLog = [{
+                    time: getCurrentFormattedTime(),
+                    module: '系统登录',
+                    desc: '管理员成功登录系统',
+                    ip: MOCK_IP
+                }];
+                localStorage.setItem('adminOperationLogs', JSON.stringify(initialLog));
+                return initialLog;
+            }
+        }
+
+        // 添加新日志
+        function addLog(module, desc) {
+            const logs = getLogs();
+            const newLog = {
+                time: getCurrentFormattedTime(),
+                module: module,
+                desc: desc,
+                ip: MOCK_IP
+            };
+            logs.unshift(newLog); // 插入到数组最前面
+            
+            // 限制最多保存10条，避免数据无限增长
+            if (logs.length > 10) {
+                logs.pop(); 
+            }
+            
+            localStorage.setItem('adminOperationLogs', JSON.stringify(logs));
+            renderLogs(); // 重新渲染表格
+        }
+
+        // 渲染日志表格
+        function renderLogs() {
+            const logs = getLogs();
+            const tbody = document.getElementById('log-table-body');
+            tbody.innerHTML = ''; // 清空当前表格
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">暂无操作记录</td></tr>';
+                return;
+            }
+
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="log-time">${log.time}</td>
+                    <td>${log.module}</td>
+                    <td>${log.desc}</td>
+                    <td>${log.ip}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 更新顶部“最近登录时间”为数组中的最后一次登录记录（如果有的话）
+            const loginLog = logs.find(l => l.module === '系统登录');
+            if (loginLog) {
+                document.getElementById('last-login-time').textContent = loginLog.time;
+            } else {
+                document.getElementById('last-login-time').textContent = logs[logs.length-1].time;
+            }
+        }
+
+        // 页面加载时执行渲染
+        renderLogs();
+
+        // ================= 3. 页面交互操作 =================
+        
+        // 刷新按钮
+        document.querySelector('.refresh-btn').addEventListener('click', () => {
+            location.reload();
+        });
+
+    
+     // ==========================================
+        // 🌟 1. 修复后的动态获取账号（必须与 login.html 暗号一致）
+        // ==========================================
+        function getLoggedAdminAccount() {
+            // 核心修复：login.html 里存的是 'lib_account'，所以这里必须取 'lib_account'
+            return localStorage.getItem('lib_account'); 
+        }
+
+        // 获取真实的动态账号
+        const currentAdminAccount = getLoggedAdminAccount();
+
+        // 页面初始化加载
+        window.addEventListener('load', function() {
+            console.log("当前识别到的管理员账号:", currentAdminAccount); // 调试用
+            
+            if (!currentAdminAccount) {
+                alert('未检测到登录状态，请先登录！');
+                window.location.href = 'login.html';
+                return;
+            }
+            // 开始拉取数据
+            fetchAdminData();
+        });
+
+        // ==========================================
+        // 🌟 2. 真实请求：获取并渲染当前管理员数据
+        // ==========================================
+        async function fetchAdminData() {
+            try {
+                // 动态拼接真实账号向后台要数据
+                const response = await fetch(`http://localhost:8080/libPrj/api/admin/getProfile?account=${currentAdminAccount}`);
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    const admin = result.data;
+                    // 成功拿到数据，替换掉“加载中...”
+                    document.getElementById('phone-input').value = admin.phone || '';
+                    document.getElementById('email-input').value = admin.email || '';
+                    
+                    // 顺便把左上角的头像旁边的大字也变成真实姓名和工号
+                    document.querySelector('.profile-info h2').textContent = admin.name || '管理员';
+                    document.querySelector('.profile-info p').textContent = `工号：${currentAdminAccount}`;
+                    
+                    // 把下面只读的真实姓名也填上
+                    document.getElementById('admin-name-input').value = admin.name || '';
+                } else {
+                    // 如果后端查无此人
+                    document.getElementById('phone-input').placeholder = "未绑定";
+                    document.getElementById('email-input').placeholder = "未绑定";
+                    console.error("查无此账号信息：", result.message);
+                }
+            } catch (error) {
+                console.error("网络或接口异常：请检查 GetAdminProfileServlet 是否存在并启动！", error);
+                document.getElementById('phone-input').placeholder = "接口异常";
+                document.getElementById('email-input').placeholder = "接口异常";
+            }
+        }
+
+        // ==========================================
+        // 🌟 3. 真实请求：保存基本信息 (电话/邮箱)
+        // ==========================================
+        async function saveBasicInfo() {
+            if (!currentAdminAccount) return alert('未获取到身份信息');
+            
+            const phone = document.getElementById('phone-input').value.trim();
+            const email = document.getElementById('email-input').value.trim();
+            
+            if (!phone || !email) {
+                alert('联系电话和电子邮箱不能为空！');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8080/libPrj/api/admin/updateProfile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        account: currentAdminAccount, // 动态账号
+                        phone: phone, 
+                        email: email 
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.code === 200) {
+                    addLog('个人中心', `修改基本信息：更新了联系方式`);
+                    alert('个人信息更新成功！\n电话: ' + phone + '\n邮箱: ' + email);
+                } else {
+                    alert('更新失败：' + result.message);
+                }
+            } catch (error) {
+                alert('网络请求失败，请检查服务器！');
+            }
+        }
+
+        // ==========================================
+        // 🌟 4. 真实请求：修改密码
+        // ==========================================
+        async function updatePassword() {
+            if (!currentAdminAccount) return alert('未获取到身份信息');
+
+            const oldPwd = document.getElementById('old-pwd').value.trim();
+            const newPwd = document.getElementById('new-pwd').value.trim();
+            const confirmPwd = document.getElementById('confirm-pwd').value.trim();
+
+            if (!oldPwd || !newPwd || !confirmPwd) {
+                alert('请完整填写密码信息！'); return;
+            }
+            if (newPwd.length < 6) {
+                alert('新密码长度不能少于6位！'); return;
+            }
+            if (newPwd !== confirmPwd) {
+                alert('两次输入的新密码不一致，请重新输入！'); return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8080/libPrj/api/user/updatePassword', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        account: currentAdminAccount, // 动态账号
+                        oldPassword: oldPwd, 
+                        newPassword: newPwd 
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.code === 200) {
+                    addLog('安全设置', '成功修改了管理员登录密码');
+                    alert('密码修改成功！为了安全，请重新登录。');
+                    logout(); 
+                } else {
+                    alert('修改失败：' + result.message);
+                }
+            } catch (error) {
+                alert('网络请求失败，请检查服务器！');
+            }
+        }
+        // ================= 退出登录 =================
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                // 登出前记录一条日志（下次登录时能在 localStorage 里看到）
+                addLog('系统登录', '管理员登出系统');
+                
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminInfo');
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>
